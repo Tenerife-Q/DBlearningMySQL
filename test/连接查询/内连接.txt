@@ -1,0 +1,18 @@
+内连接查询是两张表交集部分
+
+隐式内连接
+select 字段列表 from 表1，表2 where 条件...;
+eg. 查询每一个员工姓名，及其关联部门名称
+	表结构：emp,dept
+	连接条件：emp.dept_id = dept.id
+
+select    emp.name, dept.name    from  emp, dept    where    emp.dept_id  =  dept.id;
+select    e.name, d.name    from    emp e,   dept d    where      e.dept_id  =  d.id;  给表起了别名 就不能通过原名字限制操作
+
+显示内连接
+select 字段列表 from 表1 [inner] join 表2 on 连接条件
+eg. 查询每一个员工姓名，及其关联部门
+
+条件同上
+
+select  e.name,  d.name   from   emp e  inner join   dept d    on    e.dept_id  =  d.id

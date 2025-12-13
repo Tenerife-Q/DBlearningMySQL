@@ -1,0 +1,12 @@
+自连接
+可以是外连接查询也可是内连接查询 同一个表也不能用同一个名字
+
+select 字段列表 from 表A 别名A  join 表A  别名B  on 条件...;
+
+eg1. 查询员工以及他领导名字
+select a.name , b.name from emp a , emp b where a.managerid = b.id;  自连接表也要取别名
+
+
+eg2 查询所有员工emp及其领导名字emp 如果没有领导 也要查询出来 
+
+select  a.name '员工'  ,  b.name '领导'  from   emp a  left join  emp  b  on  a.managerid  =  b.id;

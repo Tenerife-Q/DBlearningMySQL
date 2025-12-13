@@ -1,0 +1,20 @@
+子查询
+嵌套查询
+select * from  t1  where  colunm1 = (select column1 from t2);
+
+标量子查询
+返回的结果是单个值（数字 字符串 日期）最简单的形式  = <>  >  >=  <  <=
+
+eg. 查询销售部的所有员工信息
+
+先查询部门id
+select id from dept where name = '销售部';
+再根据部门id查询员工信息
+select * from emp where dept_id = 4;
+合并
+select * from emp where dept_id = (select id from dept where name = '销售部')；
+
+
+eg. 查询xxx入职之后的员工信息
+
+select * from emp where entrydate > (select entrydate from emp name = 'xxx');

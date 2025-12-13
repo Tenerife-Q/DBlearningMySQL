@@ -1,0 +1,15 @@
+列子查询
+返回结果是一列 可以是多行  in  not in  any  some  all
+
+eg.
+查询销售部和市场部所有员工信息
+select * from emp where dept_id in (select id from dept where name = '销售部' or name = '市场部');
+
+查询比财务部所有人工资都高的人
+all 子查询所有列表返回的所有值都必须满足
+select * from emp where salary  > all (select salary from emp where dept_id = (select id from dept where name =  '财务部'))；
+
+查询比研发部其中任意一个员工工资高的员工信息
+any some 子查询返回列表中所有值都必须满足
+select * from emp where salary > any (select salary from emp where dept_id = (select id from dept where name  = '研发部'));
+select * from emp where salary > some (select salary from emp where dept_id = (select id from dept where name  = '研发部'));

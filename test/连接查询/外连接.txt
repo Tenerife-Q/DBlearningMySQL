@@ -1,0 +1,17 @@
+外连接
+
+左外连接
+select 字段列表 from 表1 left  [outer]  join 表2 on 条件....;
+eg 查询emp表的所有数据及其对应部门名字
+	条件固定 emp.dept_id = dept.id
+
+select  e.*,  d.name   from   emp e   left outer join   dept d    on   e.dept_id  =  d.id;
+
+
+右外连接
+select 字段列表 from 表1 right  [outer]  join 表2 on 条件....;
+eg. 查询dept表所有数据及其对应员工
+
+select  d.* , e.*   from   emp e   right outer join   dept d    on   e.dept_id  =  d.id;
+select  d.* , e.*   from   dept d   left outer join     emp e    on   e.dept_id  =  d.id;
+

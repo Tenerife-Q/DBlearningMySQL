@@ -1,0 +1,16 @@
+联合查询 
+union 把多次查询的结果合并起来，形成一个新的的查询结果集
+对于联合查询的多张表的列数必须保持一致 字段类型也要保持一致
+
+select 字段列表 from 表A ...
+union [ALL]
+select 字段列表 from 表B ...
+
+eg. 将薪资低于5000的员工 和 年龄大于50岁的员工全部查询出来
+select  *  from emp where salary < 5000
+union all
+select  *  from emp where age > 50
+
+select  *  from emp where salary < 5000
+union      --合并后去重
+select  *  from emp where age > 50
