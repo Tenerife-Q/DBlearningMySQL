@@ -1,0 +1,44 @@
+添加数据 
+
+给指定字段添加数据
+insert into 表名(字段名1，字段名2，....) values(值1，值2);
+eg.
+insert into emp(id, workno, name, gender, age, idcard, entrydate) values (1, '1', 'Itcast', '男', 10, '123456789123456789', '2000-01-01');
+insert into emp(id, workno, name, gender, age, idcard, entrydate) values (2, '2', 'Itcast2', '男', 10, '123456789123456789', '2000-01-01');
+
+给全部字段添加数据
+insert into 表名 values(值1，值2...);
+eg.
+insert into emp values (2,'2','Su san','n',19,'12345678912345678','2006-06-23');
+
+
+批量添加数据
+insert into 表名 (字段名1，字段名2，...) values (值1，值2，...),(值1，值2，...),(值1，值2，...);
+insert into 表名 values (值1，值2，...),(值1，值2，...),(值1，值2，...);
+eg.
+insert into emp values (3, '3', 'Tenerife', '男', 19, '12342024131065', '2006-08-01'),
+(4, '4', 'Su', '女', 19, '12345678659', '2006-06-08'),
+(5,'5','qinzi','n',10, '165165416','2006-06-03');
+
+修改数据
+update 表名 set 字段名1 = 值1，字段名2 = 值2，... [where条件]；
+eg.
+update emp set name = 'it' where id = 1;
+
+update emp set name = 'fuck', gender = '女' where id = 1;
+
+update emp set entrydate = '2008-02-02';--全部都改
+
+update emp set gender = '男' where id = 5;
+
+update emp set idcard = '234657861' where name = 'Su san';
+
+update emp set gender = '男' where id = 2;
+
+
+删除数据
+delete from 表名 [where 条件]
+eg.
+delete from emp where id = 1;
+
+delete from emp;--全部删除

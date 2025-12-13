@@ -1,0 +1,41 @@
+DCL(主管命令)
+用来管理数据库用户 控制数据库的访问权限
+
+
+管理用户
+use mysql;
+select * from user;
+
+
+创建用户
+create user '用户名'@'主机名'  identified by '密码';
+eg.
+itcast 只能够在当前主机localhost访问
+create user 'itcast'@'localhost' identified by '123456';
+Tenerife可以在任意主机访问该数据库
+create user 'Tenerife'@'%' identified by '123456'
+
+
+修改用户密码
+alter user  '用户名'@'主机名'  identified with mysql_native_password by  '新密码';
+eg.
+alter user 'Tenerife'@'%' identified with mysql_native_password by '1234';
+
+删除用户
+drop user '用户名'@'主机名';
+
+
+
+权限控制
+多个权限之间逗号分隔
+
+查询权限
+show grants for  '用户名'@'主机名';
+
+授予权限
+grant 权限列表 on 数据库名.表名 to '用户名'@'主机名'；
+grant all on itcast.* to 'Tenerife'@'%';
+
+撤销权限
+revoke 权限列表 on 数据库名.表名 from '用户名'@'主机名';
+revoke all on *.* to ''@'';

@@ -1,0 +1,125 @@
+查询
+编写顺序
+select  字段列表
+from   表明列表
+where 条件列表
+group by  分组字段列表
+having  分组后条件列表
+order by 排序字段列表
+limit  分页参数
+
+
+
+基本查询
+
+查询多个字段
+select * from 表名;  尽量输入多个字段名代替*
+
+设置别名
+select  字段1 [as 别名],字段2[as  ]...from 表名;  as可以省略
+
+去除重复
+select distinct 字段列表 from 表名
+
+
+
+条件查询
+select 字段列表 from 表名 where 条件列表; or and  like in btween ... and ...
+
+条件 比较运算符  逻辑运算符
+eg.
+查询年龄等于18或20 或40的员工信息
+select * from emp where age in(18,20,40);
+查询姓名为两个字的员工信息  
+select * from emp where name like '__';
+查询身份证号最后一位是X的员工信息
+select * from emp where idcard like 'X';
+查询不为空
+select * from emp where entrydate is not null;
+
+
+
+聚合函数 纵向运算 聚合函数不统计null
+select 聚合函数(字段列表) from 表名;
+
+select count(*) from emp;
+select count(idcard) from emp;
+
+select avg(age) from emp;
+
+select max(age) from emp;
+
+select min(age) from emp;
+
+select sum(age) from emp where workaddress = '西安';
+
+
+
+分组查询
+select 字段列表 from 表名 [where 条件] group by 分组字段名 [having 分组后过滤条件];
+where having区别
+执行时机不同：where是分组之前进行过滤，不满足where条件，不参与分组；而having是分组之后对结果进行过滤。
+判断条件不同：where不能对聚合函数进行判断，但having可以。
+执行顺序 where > 聚合函数 > having
+分组之后，查询的字段一般为聚合函数和分组字段，查询其他字段无意义，例如下面就只有gender, count(*)
+
+eg.
+根据性别分组，统计男性员工和女性员工数量
+select gender, count(*) from emp group by gender;
+根据性别分组，统计男性员工和女性员工的平均年龄
+select gender, avg(age) from emp group by gender;
+查询年龄小于45的员工 并且根据工作地址进行分组 获取员工数量大于3的工作地址
+select * from emp where age < 45    group by workaddress
+select workadddress, count(*) as addressCount from emp where age < 45  group by workaddress having addressCount >= 3;
+
+
+
+排序查询
+select 字段列表 from 表名 order by 字段1 排序方式1，字段2 排序方式2;  asc默认升序
+
+eg.
+根据年龄对公司员工进行升序排序
+select * from emp order by age asc;  
+根据年龄对公司员工进行升序排序 若年龄相同 再次按照入职时间进行降序排序
+select * from emp order by age, entrydate desc;
+
+
+
+分页查询
+select 字段列表 from 表名 limit 起始索引，查询记录数；  MySQL是limit
+起始索引从0开始 = （查询页码-1）* 每页显示记录数
+如果查询的是第一页数据，起始索引可以省略，直接简写为limit10
+
+eg.
+查询第一页员工数据，每页展示10条记录
+select * from emp limit 0,10;
+select * from emp limit 10;
+查询第二页员工数据，每页展示10条记录
+select * from emp limit 10,10;
+
+
+
+
+EG.
+1. 查询年龄为20，21，22，23的女员工信息
+select * from emp where gender = '女' and age in(20,21,22,23);
+
+2. 查询性别男 并且年龄再20-40岁之间的姓名为三个字的员工
+select * from emp where gender = '男' and age between 20 and 40 and name like '___';
+
+3. 统计员工中，年龄小于60 男性和女性的人数
+select gender, count(*) from emp where age < 60 group by gender;
+
+4. 查询所有年龄小于等于35员工的姓名和年龄，并对查询结果按年龄升序排序，年龄相同按入职时间降序排序
+select name, age from emp where age <= 35 order by age, entrydate desc;
+
+5. 查询性别为男，且年龄再20-40以内的前5个员工信息，对查询结果年龄升序，相同则按入职时间升序  注意linit要在order by之后
+select * from emp where gender = '男' and age >= 20 && age <= 40 order by age, entrydate limit 5;
+
+
+
+
+DQL 执行顺序
+from -> where -> group by -> having -> select -> order by -> limit 
+eg.
+select e.name ename, e.age eage from emp e where e.age > 15 order by eage asc;
