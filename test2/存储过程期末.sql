@@ -710,3 +710,46 @@ BEGIN
 
 END//
 DELIMITER ;
+
+
+游标的生命周期 五步走
+-- 步骤1：声明接收变量（在游标声明之前）
+DECLARE v_id INT;
+DECLARE v_name VARCHAR(50);
+
+-- 步骤2：声明游标（定义要遍历什么数据）
+DECLARE cur_name CURSOR FOR SELECT id, name FROM table_name;
+
+-- 步骤3：声明NOT FOUND处理器（在游标声明之后）
+DECLARE CONTINUE HANDLER FOR NOT FOUND SET v_done = 1;
+
+-- 步骤4：打开游标（真正执行查询）
+OPEN cur_name;
+
+-- 步骤5：循环读取
+LOOP
+    FETCH cur_name INTO v_id, v_name;  -- 读取一行
+    IF v_done = 1 THEN LEAVE loop_label; END IF;  -- 检查是否读完
+    -- 处理数据
+END LOOP;
+
+-- 步骤6：关闭游标（释放资源）
+CLOSE cur_name;
+
+
+
+声名顺序关于： 普通变量 游标 异常处理器 可执行语句
+BEGIN
+    -- 顺序1：普通变量
+    DECLARE v_var1 INT;
+    
+    -- 顺序2：游标
+    DECLARE cur_name CURSOR FOR ... ;
+    
+    -- 顺序3：异常处理器
+    DECLARE CONTINUE HANDLER FOR NOT FOUND ...;
+    
+    -- 顺序4：可执行语句
+    OPEN cur_name;
+END
+
