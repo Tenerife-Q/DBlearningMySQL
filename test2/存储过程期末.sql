@@ -42,8 +42,6 @@ DELIMITER ;
 
 
 
-
-
 题目一
 会员积分兑换系统（涉及：事务、ROW_COUNT、NOT FOUND）
 业务场景： 用户用积分兑换商品。需要检查：
@@ -278,9 +276,6 @@ IF v_not_found = 1 THEN ROLLBACK; END IF;                 -- 商品不存在立�
 
 
 
-
-
-
 题目二
 业务场景： HR 提交薪资调整申请，系统自动审批：
 
@@ -474,10 +469,6 @@ BEGIN
 
 END//
 DELIMITER ;
-
-
-
-
 
 
 
