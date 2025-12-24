@@ -645,10 +645,10 @@ END;
 
 DELIMITER $$
 CREATE PROCEDURE calc_sum_diff(
-    _____ p_a INT,          -- [填空1] 输入参数a
-    _____ p_b INT,          -- [填空2] 输入参数b
-    _____ p_sum INT,        -- [填空3] 输出参数sum
-    _____ p_diff INT        -- [填空4] 输出参数diff
+    _in__ p_a INT,          -- [填空1] 输入参数a
+    __in_ p_b INT,          -- [填空2] 输入参数b
+    _out_ p_sum INT,        -- [填空3] 输出参数sum
+    _out_ p_diff INT        -- [填空4] 输出参数diff
 )
 BEGIN
     SET p_sum = p_a + p_b;
@@ -672,10 +672,10 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE FUNCTION calc_circle_area(radius DECIMAL(10,2))
-_______ DECIMAL(10,2)    -- [填空5] 声明返回类型（有S）
-_______                  -- [填空6] 特性声明：相同半径→相同面积
+returns_ DECIMAL(10,2)    -- [填空5] 声明返回类型（有S）
+_deterministic_                  -- [填空6] 特性声明：相同半径→相同面积
 BEGIN
-    _______ 3.14 * radius * radius;  -- [填空7] 返回值（无S）
+    return 3.14 * radius * radius;  -- [填空7] 返回值（无S）
 END$$
 DELIMITER ;
 
@@ -699,11 +699,11 @@ CREATE PROCEDURE get_balance(
 )
 BEGIN
     -- [填空8] 声明NOT FOUND处理器：用户不存在时设置余额为0
-    DECLARE _______ HANDLER FOR _______
+    DECLARE _continue_ HANDLER FOR _not found_
         SET p_balance = 0;
     
     -- [填空9] 声明SQLEXCEPTION处理器：系统错误时立即退出
-    DECLARE _______ HANDLER FOR _______
+    DECLARE _exit_ HANDLER FOR _sqlexception_
     BEGIN
         SET p_balance = -1;
     END;
@@ -735,7 +735,7 @@ BEGIN
     DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SET v_error = 1;
     
     -- [填空10] 开启事务
-    _______ _______;
+    __start transaction_;
     
     -- 扣款
     UPDATE accounts SET balance = balance - p_amount WHERE id = p_from;
@@ -745,10 +745,10 @@ BEGIN
     
     -- [填空11] 检查错误：如果有错则回滚，否则提交
     IF v_error = 1 THEN
-        _______;         -- 回滚
+        _rollback_;         -- 回滚
         SET p_result = 'Fail';
     ELSE
-        _______;         -- 提交
+        _commit_;         -- 提交
         SET p_result = 'Success';
     END IF;
 END$$
@@ -767,8 +767,8 @@ DELIMITER ;
 DELIMITER $$
 CREATE FUNCTION get_student_avg(stu_id INT)
 RETURNS DECIMAL(5,2)
-_______              -- [填空12] 特性声明：包含SELECT查询
-_______              -- [填空13] 特性声明：数据可能变化
+_reads sql data_              -- [填空12] 特性声明：包含SELECT查询
+_not deterministic_              -- [填空13] 特性声明：数据可能变化
 BEGIN
     DECLARE avg_score DECIMAL(5,2);
     
@@ -806,7 +806,7 @@ BEGIN
     UPDATE employees SET salary = p_new_salary WHERE emp_id = p_emp_id;
     
     -- [填空15] 检查是否违反约束
-    IF _______ = 1 THEN
+    IF _v_constraint_error_ = 1 THEN
         ROLLBACK;
         SET p_status = '薪资违反约束';
     ELSE
@@ -828,19 +828,19 @@ DELIMITER ;
 
 DELIMITER $$
 CREATE PROCEDURE score_to_grade(
-    _______ p_value VARCHAR(20)  -- [填空16] 既输入又输出的参数类型
+    _inout_ p_value VARCHAR(20)  -- [填空16] 既输入又输出的参数类型
 )
 BEGIN
     DECLARE v_score INT;
     SET v_score = CAST(p_value AS SIGNED);
     
     -- [填空17] 使用CASE判断等级
-    SET p_value = _______
+    SET p_value = _case_
         WHEN v_score >= 90 THEN '优秀'
         WHEN v_score >= 80 THEN '良好'
         WHEN v_score >= 60 THEN '及格'
         ELSE '不及格'
-    _______;  -- [填空18] CASE结束关键字
+    __end_;  -- [填空18] CASE结束关键字
 END$$
 DELIMITER ;
 
