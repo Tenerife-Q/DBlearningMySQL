@@ -798,7 +798,7 @@ BEGIN
     DECLARE v_constraint_error INT DEFAULT 0;
     
     -- [填空14] 声明约束违反处理器（SQLSTATE '23000'）
-    DECLARE CONTINUE HANDLER FOR SQLSTATE '_______'
+    DECLARE CONTINUE HANDLER FOR SQLSTATE '__23000__'
         SET v_constraint_error = 1;
     
     START TRANSACTION;
@@ -866,29 +866,29 @@ BEGIN
     DECLARE v_done INT DEFAULT 0;
     
     -- [填空19] 声明游标
-    DECLARE cur_students _______ FOR
+    DECLARE cur_students _cursor_ FOR
         SELECT student_name FROM student;
     
     -- [填空20] 声明NOT FOUND处理器
-    DECLARE CONTINUE _______ FOR _______
+    DECLARE CONTINUE _continue_ FOR _not found_
         SET v_done = 1;
     
     -- [填空21] 打开游标
-    _______ cur_students;
+    _open__ cur_students;
     
     read_loop: LOOP
         -- [填空22] 从游标读取数据
-        _______ cur_students INTO v_name;
+        _fetch_ cur_students INTO v_name;
         
         IF v_done = 1 THEN
-            _______ read_loop;  -- [填空23] 退出循环
+            _leave_ read_loop;  -- [填空23] 退出循环
         END IF;
         
         SELECT v_name;
     END LOOP;
     
     -- [填空24] 关闭游标
-    _______ cur_students;
+    _close_ cur_students;
 END$$
 DELIMITER ;
 
