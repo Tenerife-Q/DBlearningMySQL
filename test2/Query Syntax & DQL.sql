@@ -14,6 +14,10 @@ DROP DATABASE IF EXISTS sql_review;
 CREATE DATABASE sql_review DEFAULT CHARSET utf8mb4;
 USE sql_review;
 
+drop database if exists 
+use someone
+
+
 -- -----------------------------------------------------------------------------
 -- 表1：部门表 department
 -- -----------------------------------------------------------------------------
@@ -22,6 +26,11 @@ CREATE TABLE department (
     department_name VARCHAR(50) NOT NULL COMMENT '部门名称',
     location VARCHAR(50) COMMENT '部门所在地'
 ) COMMENT '部门表';
+
+create table department (
+		id int primary key auto_increment comment '  '   auto_increment
+		department_name varchar(50) not null comment ' ',
+		location varchar(50) 
 
 INSERT INTO department (department_name, location) VALUES
     ('技术部', '北京'),
@@ -46,6 +55,8 @@ CREATE TABLE employee (
     FOREIGN KEY (department_id) REFERENCES department(id)
 ) COMMENT '员工表';
 
+insert into employee (name, gender, age, phone, ...) values 
+
 INSERT INTO employee (name, gender, age, phone, department_id, salary, entry_date, manager_id) VALUES
     ('张三', '男', 28, '13800001111', 1, 15000.00, '2020-03-15', NULL),
     ('李四', '男', 32, '13800002222', 1, 12000.00, '2019-07-01', 1),
@@ -67,6 +78,8 @@ CREATE TABLE project (
     department_id INT COMMENT '负责部门ID',
     FOREIGN KEY (department_id) REFERENCES department(id)
 ) COMMENT '项目表';
+
+foreign key (department_id) references department(id) 阐述外键
 
 INSERT INTO project (project_name, department_id) VALUES
     ('电商平台开发', 1),
@@ -329,6 +342,10 @@ SELECT * FROM employee ORDER BY entry_date DESC;
 -- 【起始索引】= (页码 - 1) × 每页条数
 -- 【注意】MySQL 中 LIMIT 是最后执行的
 
+
+所谓起始索引 和 每页查询条数 0,5 就是 0,1,2,3,4 索引的数据
+
+
 -- 查询前5条记录（第1页，每页5条）
 SELECT * FROM employee LIMIT 0, 5;
 SELECT * FROM employee LIMIT 5;  -- 等价写法（起始索引为0可省略）
@@ -357,6 +374,55 @@ SELECT * FROM employee LIMIT 5 OFFSET 5;  -- 等价于 LIMIT 5, 5
 SELECT name, salary AS sal FROM employee WHERE salary > 10000 ORDER BY sal DESC;
 -- ✅ ORDER BY 可以使用别名 sal
 -- ❌ WHERE 不能使用别名：WHERE sal > 10000 会报错
+
+因为where的执行顺序在select之前 执行到where的时候还不知道字段被重命名了
+order by 可以的原因是在select执行之后
+
+
+where和having
+看需不需要分组/用不用的上统计函数 
+
+where在前 
+1. 什么时候用 WHERE？
+当你的筛选条件不需要用到求和（SUM）、平均值（AVG）、计数（COUNT）等统计函数时，必须使用 WHERE。
+
+场景：HR 想要统计“技术部”中“年龄大于 25 岁”的员工分布。
+
+SQL
+
+SELECT department_id, COUNT(*) 
+FROM employee
+WHERE age > 25 AND department_id = 1  -- 这里的筛选针对每一位员工
+GROUP BY department_id;
+逻辑： 在把员工扔进各个部门的“桶”里之前，先把 25 岁以下的和非技术部的人直接“扔掉”。
+
+优势： 效率高。数据库不需要处理那些根本不符合条件的行，节省内存和计算资源
+
+having在后
+2. 什么时候用 HAVING？
+当你的筛选条件必须基于统计结果（聚合函数）时，只能使用 HAVING。
+
+场景：财务部想要找出“平均工资超过 10,000 元”的部门。
+
+SQL
+
+SELECT department_id, AVG(salary)
+FROM employee
+GROUP BY department_id
+HAVING AVG(salary) > 10000;  -- 这里的筛选针对的是“部门”这个组
+逻辑： 数据库必须先查出所有员工，按部门分好组，算出每个组的平均分，然后才能判断哪个组留下来。
+
+为什么不能用 WHERE？ 因为在 WHERE 执行的时候，数据库还没开始分组，它根本不知道每个部门的平均工资是多少。
+
+
+综合应用
+找出“工资大于 8,000 的员工”中，哪些“部门的平均工资超过了 12,000”
+
+select department_id as '部门' , AVG(salary) as '部门平均工资' 
+from employee 
+where salary > 8000 
+group by department_id 
+having AVG(salary) > 12000;
 
 
 -- ═══════════════════════════════════════════════════════════════════════════════
@@ -393,6 +459,10 @@ INNER JOIN department d
 ON e.department_id = d. id
 WHERE d. department_name = '技术部';
 
+先找连接字段匹配on连接条件 
+列出两个连接上的表 中间使用inner join连接两张表（这里可以给表重命名） 
+然后添加on的匹配字段 后面加上where筛选条件  
+最后在加上查询字段
 
 -- =============================================================================
 -- 3.2 左外连接 LEFT JOIN
@@ -416,6 +486,11 @@ LEFT JOIN department d
 ON e.department_id = d.id
 WHERE d.id IS NULL;
 
+先找到目标 员工 
+连接表单 employee和department from后面使用left join 重点找人 特别是找右边为null的人
+找到两张表连接字段 匹配on建立连接
+列出员工匹配部门的所有然后再添加where条件筛出要求的那个人
+
 
 -- =============================================================================
 -- 3.3 右外连接 RIGHT JOIN
@@ -431,6 +506,7 @@ FROM employee e
 RIGHT JOIN department d
 ON e. department_id = d.id;
 -- 结果中"市场部"没有员工，员工姓名显示 NULL
+注意这里是找没有员工的部门 逻辑与上面相似 
 
 -- -----------------------------------------------------------------------------
 -- 【LEFT JOIN vs RIGHT JOIN 等价转换】
@@ -455,6 +531,7 @@ FROM employee e
 LEFT JOIN employee m
 ON e.manager_id = m.id;
 -- 使用 LEFT JOIN 保证没有经理的员工也能显示
+注意还是使用的是left join 处理层级关系 记住这个例子
 
 
 -- =============================================================================
@@ -471,7 +548,7 @@ LEFT JOIN department d ON e.department_id = d.id
 LEFT JOIN assignment a ON e.id = a.employee_id
 LEFT JOIN project p ON a.project_id = p. id
 ORDER BY e.name;
-
+这里把order by 看成 group by了 注意后者使用了查询字段只能是分组字段和聚合函数
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 第四部分：子查询（嵌套查询）
