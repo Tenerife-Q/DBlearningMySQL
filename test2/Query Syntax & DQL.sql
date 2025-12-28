@@ -580,6 +580,8 @@ WHERE salary = (SELECT MAX(salary) FROM employee);
 
 -- 【特点】子查询返回多行单列，常用操作符：IN, NOT IN, ANY, SOME, ALL
 
+多行单列就是从很多目标单元中的一个字段中筛选 一般用于子查询过程中
+
 -- | 操作符 | 说明                                     |
 -- |--------|------------------------------------------|
 -- | IN     | 在列表中                                 |
@@ -592,6 +594,11 @@ SELECT * FROM employee
 WHERE department_id IN (
     SELECT id FROM department WHERE department_name IN ('技术部', '销售部')
 );
+
+select e.* from employee e 
+inner join department d on e.department_id = d.id 
+where d.department_name in ('','');
+
 
 -- 等价的 JOIN 写法
 SELECT e.* FROM employee e
@@ -618,6 +625,8 @@ WHERE salary > ANY (
 -- =============================================================================
 
 -- 【特点】子查询返回单行多列，用于多字段同时比较
+
+这种行子查询 每次查询只返回一行 但是多个列 用于多字段的同时比较 比写两个AND条件更简洁
 
 -- 查询与"李四"年龄和部门都相同的员工
 SELECT * FROM employee
@@ -699,6 +708,7 @@ UNION ALL
 SELECT name, age, salary FROM employee WHERE salary > 15000;
 
 -- ⚠️ UNION 要求：列数相同，对应列的数据类型兼容
+就是需要联合几个查询 两个查询字段都要对应相等
 
 
 -- =============================================================================
@@ -789,6 +799,12 @@ FROM employee;
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- 练习1：查询各部门平均工资，按平均工资降序排列
+
+select d.department as 部门 , AVG(e.salary) as 平均工资
+from employee e inner join department d on e.department_id = d.id 
+group by d.department_name
+order by 平均工资 这里可以用代名 因为order by 是在select后执行
+
 SELECT d.department_name AS 部门, AVG(e. salary) AS 平均工资
 FROM employee e
 INNER JOIN department d ON e.department_id = d.id
@@ -796,9 +812,11 @@ GROUP BY d.department_name
 ORDER BY 平均工资 DESC;
 
 -- 练习2：查询工资高于本部门平均工资的员工
+就是线筛出所有部门的平均工资 做成一个新的列表 命名为dept_avg 然后和employee inner join 使用部门id作为on连接条件
 SELECT e.name, e.salary, e.department_id, dept_avg.avg_salary AS 部门平均工资
 FROM employee e
 INNER JOIN (
+		子查询先找出每个部门的平均工资 以部门名称分类 要学会拆分问题
     SELECT department_id, AVG(salary) AS avg_salary
     FROM employee
     GROUP BY department_id
@@ -826,6 +844,12 @@ FROM employee e
 LEFT JOIN assignment a ON e.id = a. employee_id
 WHERE a.id IS NULL AND e.department_id IS NULL;
 
+select e.name as 姓名
+from employee e 
+where e.department_id is null 
+and not exists (
+		select 1 from assignment a where a.employee_id = e.id
+);
 
 -- ═══════════════════════════════════════════════════════════════════════════════
 -- 第七部分：关键语法速查表
