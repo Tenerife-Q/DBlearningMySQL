@@ -30,7 +30,7 @@ USE db_advanced;
 │  类型            │  含义                    │  实现方式                      │
 │─────────────────────────────────────────────────────────────────────────────│
 │  实体完整性      │  主键唯一且非空          │  PRIMARY KEY                   │
-│  参照完整性      │  外键引用必须有效        │  FOREIGN KEY ...  REFERENCES    │
+│  参照完整性      │  外键引用必须有效        │  FOREIGN KEY ...REFERENCES    │
 │  用户定义完整性  │  自定义业务规则          │  CHECK, NOT NULL, UNIQUE, DEFAULT│
 └─────────────────────────────────────────────────────────────────────────────┘
 */
@@ -56,6 +56,7 @@ CREATE TABLE student (
 ) COMMENT '学生表';
 
 -- 等价写法：在表级定义主键
+drop table if exists student2;
 CREATE TABLE student2 (
     sno CHAR(9),
     sname VARCHAR(20) NOT NULL,
@@ -98,9 +99,9 @@ INSERT INTO department (dept_name, location) VALUES ('销售部', '上海');
 SELECT * FROM department;
 
 -- 📌 AUTO_INCREMENT 特点：
--- 1. 必须是主键或唯一键
--- 2. 必须是整数类型
--- 3. 每次插入自动 +1
+-- 1.必须是主键或唯一键
+-- 2.必须是整数类型
+-- 3.每次插入自动 +1
 
 
 -- =============================================================================
@@ -231,7 +232,7 @@ CREATE TABLE test_check (
 );
 
 -- ✅ 正确
-INSERT INTO test_check VALUES (1, 20, '男', 85. 5);
+INSERT INTO test_check VALUES (1, 20, '男', 85.5);
 
 -- ❌ 错误：年龄超出范围
 -- INSERT INTO test_check VALUES (2, 200, '男', 60);
@@ -386,13 +387,13 @@ SELECT user, host FROM mysql.user;
 -- 3.2.1 授予权限 GRANT
 -- -----------------------------------------------------------------------------
 
--- 【语法】GRANT 权限列表 ON 数据库. 表 TO '用户名'@'主机名';
+-- 【语法】GRANT 权限列表 ON 数据库.表 TO '用户名'@'主机名';
 
 -- 授予查询权限（指定数据库的所有表）
 -- GRANT SELECT ON db_advanced.* TO 'zhangsan'@'localhost';
 
 -- 授予多个权限
--- GRANT SELECT, INSERT, UPDATE, DELETE ON db_advanced. * TO 'zhangsan'@'localhost';
+-- GRANT SELECT, INSERT, UPDATE, DELETE ON db_advanced.* TO 'zhangsan'@'localhost';
 
 -- 授予所有权限（指定表）
 -- GRANT ALL PRIVILEGES ON db_advanced.employee TO 'zhangsan'@'localhost';
@@ -404,7 +405,7 @@ SELECT user, host FROM mysql.user;
 📌 权限范围说明：
    *.*              →  所有数据库的所有表（最高权限，仅管理员）
    db_advanced.*    →  指定数据库的所有表
-   db_advanced. emp  →  指定数据库的指定表
+   db_advanced.emp  →  指定数据库的指定表
    
 📌 WITH GRANT OPTION：允许该用户将权限授予其他用户
 */
@@ -492,15 +493,15 @@ SELECT user, host FROM mysql.user;
 /*
 场景：公司有三类员工需要不同的数据库权限
 
-1. 普通员工（只读权限）
+1.普通员工（只读权限）
    CREATE USER 'emp_user'@'localhost' IDENTIFIED BY 'emp123';
    GRANT SELECT ON company_db.* TO 'emp_user'@'localhost';
 
-2. 部门经理（读写权限）
+2.部门经理（读写权限）
    CREATE USER 'mgr_user'@'localhost' IDENTIFIED BY 'mgr123';
    GRANT SELECT, INSERT, UPDATE ON company_db.* TO 'mgr_user'@'localhost';
 
-3. 数据库管理员（全部权限）
+3.数据库管理员（全部权限）
    CREATE USER 'dba_user'@'localhost' IDENTIFIED BY 'dba123';
    GRANT ALL PRIVILEGES ON *.* TO 'dba_user'@'localhost' WITH GRANT OPTION;
 */
@@ -614,6 +615,8 @@ COMMIT;
 UPDATE account SET money = 2000;
 
 -- 模拟转账业务
+drop PROCEDURE if exists Transfer;
+
 DELIMITER //
 
 CREATE PROCEDURE Transfer(
@@ -759,7 +762,7 @@ SELECT @num AS 翻倍后的值;            -- 结果：20
 -- -----------------------------------------------------------------------------
 -- 5.3.1 局部变量 DECLARE
 -- -----------------------------------------------------------------------------
--- 【作用域】只在 BEGIN... END 块内有效
+-- 【作用域】只在 BEGIN...END 块内有效
 -- 【语法】DECLARE 变量名 数据类型 [DEFAULT 默认值];
 
 DROP PROCEDURE IF EXISTS proc_local_var;
@@ -794,7 +797,7 @@ SELECT @n AS 姓名, @m AS 余额;
 -- -----------------------------------------------------------------------------
 -- 5.3.3 系统变量 @@
 -- -----------------------------------------------------------------------------
--- 【类型】全局变量 @@global.  会话变量 @@session.  或 @@
+-- 【类型】全局变量 @@global.会话变量 @@session.或 @@
 
 SELECT @@autocommit;                 -- 会话级
 SELECT @@global.max_connections;     -- 全局级
@@ -914,7 +917,7 @@ BEGIN
 END //
 DELIMITER ;
 
--- 计算 1+2+... +100
+-- 计算 1+2+...+100
 CALL proc_while_demo(100, @sum);
 SELECT @sum AS '1到100的和';
 
@@ -971,7 +974,7 @@ UNTIL 退出条件
 END REPEAT;
 
 📌 特点：先执行后判断（至少执行一次）
-📌 类似其他语言的 do... while
+📌 类似其他语言的 do...while
 */
 
 DROP PROCEDURE IF EXISTS proc_repeat_demo;
@@ -1163,12 +1166,12 @@ SELECT func_factorial(10) AS '10的阶乘';  -- 结果：3628800
 - 需要在遍历过程中做判断和操作
 
 【游标使用五步曲】
-1. 声明变量（存储每行数据）
-2. 声明游标（绑定查询语句）
-3. 声明异常处理器（处理遍历结束）
-4. 打开游标
-5. 循环读取数据
-6. 关闭游标
+1.声明变量（存储每行数据）
+2.声明游标（绑定查询语句）
+3.声明异常处理器（处理遍历结束）
+4.打开游标
+5.循环读取数据
+6.关闭游标
 
 ⚠️ 声明顺序必须是：变量 → 游标 → 异常处理器
 */
@@ -1181,19 +1184,19 @@ SELECT func_factorial(10) AS '10的阶乘';  -- 结果：3628800
 /*
 【语法】
 
--- 1. 声明游标
+-- 1.声明游标
 DECLARE 游标名 CURSOR FOR SELECT语句;
 
--- 2. 声明异常处理器（游标结束时触发）
+-- 2.声明异常处理器（游标结束时触发）
 DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
 
--- 3. 打开游标
+-- 3.打开游标
 OPEN 游标名;
 
--- 4. 读取数据（每次读取一行）
-FETCH 游标名 INTO 变量1, 变量2, ... ;
+-- 4.读取数据（每次读取一行）
+FETCH 游标名 INTO 变量1, 变量2, ...;
 
--- 5. 关闭游标
+-- 5.关闭游标
 CLOSE 游标名;
 */
 
@@ -1355,7 +1358,7 @@ END;
 📌 用法示例：
    INSERT 触发器：NEW.字段名 获取新插入的值
    UPDATE 触发器：OLD.字段名 获取旧值，NEW.字段名 获取新值
-   DELETE 触发器：OLD. 字段名 获取被删除的值
+   DELETE 触发器：OLD.字段名 获取被删除的值
 */
 
 
@@ -1430,7 +1433,7 @@ AFTER INSERT ON employee_trigger
 FOR EACH ROW
 BEGIN
     INSERT INTO employee_log (operation, emp_id, new_data, log_time)
-    VALUES ('INSERT', NEW. id, 
+    VALUES ('INSERT', NEW.id, 
             CONCAT('name=', NEW.name, ', salary=', NEW.salary), 
             NOW());
 END //
@@ -1480,7 +1483,7 @@ FOR EACH ROW
 BEGIN
     INSERT INTO employee_log (operation, emp_id, old_data, log_time)
     VALUES ('DELETE', OLD.id,
-            CONCAT('name=', OLD. name, ', salary=', OLD.salary),
+            CONCAT('name=', OLD.name, ', salary=', OLD.salary),
             NOW());
 END //
 DELIMITER ;
@@ -1506,7 +1509,7 @@ BEGIN
     
     -- 工资涨幅不能超过50%
     IF NEW.salary > OLD.salary * 1.5 THEN
-        SET NEW. salary = OLD.salary * 1.5;
+        SET NEW.salary = OLD.salary * 1.5;
     END IF;
 END //
 DELIMITER ;
@@ -1601,8 +1604,8 @@ BEGIN
         SUM(c.ccredit),
         SUM(
             CASE 
-                WHEN sc.grade >= 90 THEN 4. 0 * c.ccredit
-                WHEN sc. grade >= 80 THEN 3.0 * c. ccredit
+                WHEN sc.grade >= 90 THEN 4.0 * c.ccredit
+                WHEN sc.grade >= 80 THEN 3.0 * c.ccredit
                 WHEN sc.grade >= 70 THEN 2.0 * c.ccredit
                 WHEN sc.grade >= 60 THEN 1.0 * c.ccredit
                 ELSE 0
@@ -1754,7 +1757,7 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  │ 1️⃣  完整性约束                                                            │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
 │  │  实体完整性    →  PRIMARY KEY（主键非空唯一）                              │  │
-│  │  参照完整性    →  FOREIGN KEY ...  REFERENCES（外键引用有效）               │  │
+│  │  参照完整性    →  FOREIGN KEY ...REFERENCES（外键引用有效）               │  │
 │  │  用户定义      →  CHECK, NOT NULL, UNIQUE, DEFAULT                        │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                 │
@@ -1771,8 +1774,8 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  │ 3️⃣  安全性管理                                                            │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
 │  │  用户管理    →  CREATE USER / DROP USER / ALTER USER                      │  │
-│  │  权限授予    →  GRANT 权限 ON 数据库. 表 TO 用户                            │  │
-│  │  权限撤销    →  REVOKE 权限 ON 数据库. 表 FROM 用户                         │  │
+│  │  权限授予    →  GRANT 权限 ON 数据库.表 TO 用户                            │  │
+│  │  权限撤销    →  REVOKE 权限 ON 数据库.表 FROM 用户                         │  │
 │  │  角色管理    →  CREATE ROLE / GRANT 角色 TO 用户                           │  │
 │  │  查看权限    →  SHOW GRANTS FOR 用户                                       │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
@@ -1791,7 +1794,7 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
 │  │ 5️⃣  存储过程                                                              │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
-│  │  创建  →  CREATE PROCEDURE 过程名(IN/OUT/INOUT 参数) BEGIN... END          │  │
+│  │  创建  →  CREATE PROCEDURE 过程名(IN/OUT/INOUT 参数) BEGIN...END          │  │
 │  │  调用  →  CALL 过程名(参数)                                                │  │
 │  │  删除  →  DROP PROCEDURE IF EXISTS 过程名                                  │  │
 │  │                                                                           │  │
@@ -1804,7 +1807,7 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
 │  │ 6️⃣  存储函数                                                              │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
-│  │  创建  →  CREATE FUNCTION 函数名(参数) RETURNS 类型 BEGIN... RETURN... END  │  │
+│  │  创建  →  CREATE FUNCTION 函数名(参数) RETURNS 类型 BEGIN...RETURN...END  │  │
 │  │  调用  →  SELECT 函数名(参数) 或嵌入其他SQL                                │  │
 │  │  删除  →  DROP FUNCTION IF EXISTS 函数名                                   │  │
 │  │                                                                           │  │
@@ -1825,10 +1828,10 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  ┌───────────────────────────────────────────────────────────────────────────┐  │
 │  │ 8️⃣  流程控制语句                                                          │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
-│  │  条件判断  →  IF... THEN...ELSEIF...ELSE...END IF                          │  │
-│  │  分支语句  →  CASE WHEN... THEN...ELSE...END CASE                          │  │
+│  │  条件判断  →  IF...THEN...ELSEIF...ELSE...END IF                          │  │
+│  │  分支语句  →  CASE WHEN...THEN...ELSE...END CASE                          │  │
 │  │  WHILE     →  WHILE 条件 DO...END WHILE（先判断后执行）                   │  │
-│  │  LOOP      →  LOOP... LEAVE 标签... END LOOP（配合LEAVE退出）               │  │
+│  │  LOOP      →  LOOP...LEAVE 标签...END LOOP（配合LEAVE退出）               │  │
 │  │  REPEAT    →  REPEAT...UNTIL 条件 END REPEAT（先执行后判断）              │  │
 │  └───────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                 │
@@ -1836,9 +1839,9 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  │ 9️⃣  游标                                                                  │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
 │  │  声明顺序（必须遵守！）：                                                  │  │
-│  │    1.  DECLARE 变量                                                        │  │
-│  │    2. DECLARE 游标 CURSOR FOR SELECT...                                    │  │
-│  │    3. DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1                 │  │
+│  │    1.DECLARE 变量                                                        │  │
+│  │    2.DECLARE 游标 CURSOR FOR SELECT...                                 │  │
+│  │    3.DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1                 │  │
 │  │                                                                           │  │
 │  │  使用步骤：                                                                │  │
 │  │    OPEN 游标 → FETCH 游标 INTO 变量 → 处理数据 → CLOSE 游标               │  │
@@ -1848,7 +1851,7 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 │  │ 🔟 触发器                                                                  │  │
 │  ├───────────────────────────────────────────────────────────────────────────┤  │
 │  │  语法  →  CREATE TRIGGER 名 {BEFORE|AFTER} {INSERT|UPDATE|DELETE} ON 表   │  │
-│  │           FOR EACH ROW BEGIN... END                                        │  │
+│  │           FOR EACH ROW BEGIN...END                                        │  │
 │  │                                                                           │  │
 │  │  NEW 和 OLD：                                                              │  │
 │  │    INSERT  →  NEW 可用（新数据）                                          │  │
@@ -1869,7 +1872,7 @@ SELECT * FROM stats_table;  -- 选课总数变为 5
 -- ═══════════════════════════════════════════════════════════════════════════════
 
 -- =============================================================================
--- 11. 1 创建带完整约束的表（模板）
+-- 11.1 创建带完整约束的表（模板）
 -- =============================================================================
 
 /*
@@ -1901,11 +1904,11 @@ BEGIN
     DECLARE 变量名 数据类型 DEFAULT 默认值;
     
     -- 业务逻辑
-    SELECT ...  INTO 输出参数 FROM ...  WHERE ... ;
+    SELECT ...INTO 输出参数 FROM ...WHERE ...;
     
     -- 或使用流程控制
     IF 条件 THEN
-        ... 
+        ...
     ELSE
         ...
     END IF;
@@ -1931,7 +1934,7 @@ BEGIN
     DECLARE 变量 数据类型;
     
     -- 计算逻辑
-    SELECT ... INTO 变量 FROM ... ;
+    SELECT ...INTO 变量 FROM ...;
     
     RETURN 变量;
 END //
@@ -1951,22 +1954,22 @@ SELECT 字段, 函数名(字段) FROM 表;
 DELIMITER //
 CREATE PROCEDURE 过程名()
 BEGIN
-    -- 1. 声明变量（必须最先）
+    -- 1.声明变量（必须最先）
     DECLARE v_字段1 数据类型;
     DECLARE v_字段2 数据类型;
     DECLARE done INT DEFAULT 0;
     
-    -- 2. 声明游标
+    -- 2.声明游标
     DECLARE 游标名 CURSOR FOR
         SELECT 字段1, 字段2 FROM 表名;
     
-    -- 3. 声明异常处理
+    -- 3.声明异常处理
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
     
-    -- 4. 打开游标
+    -- 4.打开游标
     OPEN 游标名;
     
-    -- 5. 循环读取
+    -- 5.循环读取
     read_loop: LOOP
         FETCH 游标名 INTO v_字段1, v_字段2;
         
@@ -1975,10 +1978,10 @@ BEGIN
         END IF;
         
         -- 处理每行数据
-        ... 
+        ...
     END LOOP read_loop;
     
-    -- 6. 关闭游标
+    -- 6.关闭游标
     CLOSE 游标名;
 END //
 DELIMITER ;
@@ -1996,8 +1999,8 @@ CREATE TRIGGER tr_表名_insert
 {BEFORE|AFTER} INSERT ON 表名
 FOR EACH ROW
 BEGIN
-    -- 使用 NEW. 字段 获取新插入的值
-    -- BEFORE 可以修改 NEW. 字段
+    -- 使用 NEW.字段 获取新插入的值
+    -- BEFORE 可以修改 NEW.字段
 END //
 DELIMITER ;
 
@@ -2007,10 +2010,10 @@ CREATE TRIGGER tr_表名_update
 {BEFORE|AFTER} UPDATE ON 表名
 FOR EACH ROW
 BEGIN
-    -- OLD. 字段 = 更新前的值
+    -- OLD.字段 = 更新前的值
     -- NEW.字段 = 更新后的值
     IF OLD.字段 != NEW.字段 THEN
-        ... 
+        ...
     END IF;
 END //
 DELIMITER ;
@@ -2021,7 +2024,7 @@ CREATE TRIGGER tr_表名_delete
 {BEFORE|AFTER} DELETE ON 表名
 FOR EACH ROW
 BEGIN
-    -- 使用 OLD. 字段 获取被删除的值
+    -- 使用 OLD.字段 获取被删除的值
 END //
 DELIMITER ;
 */
@@ -2035,7 +2038,7 @@ DELIMITER ;
 START TRANSACTION;  -- 开启事务
 
 -- 执行多条 SQL
-UPDATE 表1 SET ... ;
+UPDATE 表1 SET ...;
 UPDATE 表2 SET ...;
 
 -- 判断是否成功
@@ -2057,7 +2060,7 @@ CREATE USER '用户名'@'localhost' IDENTIFIED BY '密码';
 CREATE USER '用户名'@'%' IDENTIFIED BY '密码';
 
 -- 授权
-GRANT SELECT ON 数据库. * TO '用户名'@'localhost';
+GRANT SELECT ON 数据库.* TO '用户名'@'localhost';
 GRANT SELECT, INSERT, UPDATE, DELETE ON 数据库.* TO '用户名'@'localhost';
 GRANT ALL PRIVILEGES ON 数据库.* TO '用户名'@'localhost';
 GRANT ALL PRIVILEGES ON *.* TO '用户名'@'localhost' WITH GRANT OPTION;
