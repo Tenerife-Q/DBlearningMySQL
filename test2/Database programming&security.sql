@@ -217,7 +217,7 @@ INSERT INTO test_unique VALUES (2, NULL, NULL);  -- 多个 NULL 允许
 -- 📌 UNIQUE vs PRIMARY KEY 区别：
 -- | 特性     | PRIMARY KEY | UNIQUE  |
 -- |----------|-------------|---------|
--- | 允许NULL | ❌          | ✅      |
+-- | 允许NULL | ❌          | ✅       |
 -- | 数量限制 | 只能1个     | 可多个  |
 
 -- -----------------------------------------------------------------------------
@@ -604,7 +604,8 @@ COMMIT;
    │  关闭自动提交      │  SET @@autocommit = 0    │  全局生效，所有语句需手动提交│
    │  显式开启事务      │  START TRANSACTION       │  仅当前事务有效，更灵活     │
    
-   💡 推荐使用 START TRANSACTION，更清晰明确
+   💡 推荐使用 START TRANSACTION，更清晰明确 
+	 就用 start transaction 就完事了
 */
 
 -- -----------------------------------------------------------------------------
@@ -616,6 +617,33 @@ UPDATE account SET money = 2000;
 
 -- 模拟转账业务
 drop PROCEDURE if exists Transfer;
+
+delimiter //
+create procedure Transfer(
+		in from_name varchar(20),
+		in to_name varchar(20),
+		in amount decimal(10,2),
+		out result varchar(50)
+)
+
+begin 
+		declare exit handler for sqlexception
+		begin
+			rollback;
+			set result = 'failed and rollback';
+		end;
+		
+		start transaction;
+		
+		update account set money = money - amount where name = from_name;
+		
+		update account set money = money + amount where name = to_name;
+		
+		commit;
+		set result = 'success!';
+end //
+
+delimiter ;
 
 DELIMITER //
 
@@ -651,7 +679,7 @@ DELIMITER ;
 
 -- 测试转账
 CALL Transfer('张三', '李四', 500, @result);
-SELECT @result;
+SELECT @result; @out 输出的参数 当个占位符吧
 SELECT * FROM account;
 
 
@@ -689,7 +717,7 @@ DELIMITER ;                         -- 恢复分隔符
 
 /*
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        参数类型对比                                          │
+│                        参数类型对比                                         │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  类型     │  关键字  │  调用时        │  过程内修改  │  返回修改后的值      │
 │─────────────────────────────────────────────────────────────────────────────│
@@ -963,6 +991,31 @@ DELIMITER ;
 CALL proc_loop_demo(100, @sum);
 SELECT @sum;
 
+
+delimeter //
+
+create procedure proc(
+		in n int,
+		out sum int
+)
+begin 
+		declare i int default 0;
+		set sum = 0;
+		
+		sum_loop : loop 
+			set i = i + 1;
+			
+			if i > n then 
+				leave sum_loop;
+			end if;
+			
+			set sum = sum + i;
+		end loop sum_loop;
+	
+end //
+
+
+delimiter ;
 -- -----------------------------------------------------------------------------
 -- 5.4.5 REPEAT 循环
 -- -----------------------------------------------------------------------------
@@ -1227,24 +1280,28 @@ DROP PROCEDURE IF EXISTS proc_cursor_demo;
 DELIMITER //
 CREATE PROCEDURE proc_cursor_demo()
 BEGIN
-    -- 1️⃣ 声明变量（必须最先声明）
+    -- 1️ 声明变量（必须最先声明）
     DECLARE v_sno CHAR(9);
     DECLARE v_sname VARCHAR(20);
     DECLARE v_sage INT;
     DECLARE done INT DEFAULT 0;              -- 游标结束标记
     DECLARE result VARCHAR(1000) DEFAULT ''; -- 结果字符串
     
-    -- 2️⃣ 声明游标
+    -- 2️ 声明游标
     DECLARE student_cur CURSOR FOR 
         SELECT sno, sname, sage FROM student_cursor;
+				
+		declare stu_cur cursor for 
+				select sno, sname, sage from student_cursor;
     
-    -- 3️⃣ 声明异常处理器（NOT FOUND 时设置 done = 1）
+    -- 3️ 声明异常处理器（NOT FOUND 时设置 done = 1）
     DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+		declare continue handler for not found set done = 1;
     
-    -- 4️⃣ 打开游标
+    -- 4️ 打开游标
     OPEN student_cur;
     
-    -- 5️⃣ 循环读取数据
+    -- 5 循环读取数据
     read_loop:  LOOP
         -- 读取一行数据
         FETCH student_cur INTO v_sno, v_sname, v_sage;
@@ -1258,7 +1315,7 @@ BEGIN
         SET result = CONCAT(result, '学号:', v_sno, ' 姓名:', v_sname, ' 年龄:', v_sage, '; ');
     END LOOP read_loop;
     
-    -- 6️⃣ 关闭游标
+    -- 6 关闭游标
     CLOSE student_cur;
     
     -- 输出结果
