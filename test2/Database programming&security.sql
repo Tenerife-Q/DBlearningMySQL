@@ -1575,3 +1575,540 @@ BEGIN
     WHERE sno = p_sno;
 END //
 DELIMITER ;
+
+
+
+-- 调用测试
+CALL proc_student_score('001', @avg, @cnt);
+SELECT @avg AS 平均成绩, @cnt AS 选课数量;
+
+-- -----------------------------------------------------------------------------
+-- 综合练习2：存储函数 - 计算学生学分绩点
+-- -----------------------------------------------------------------------------
+DROP FUNCTION IF EXISTS func_calc_gpa;
+
+DELIMITER //
+CREATE FUNCTION func_calc_gpa(p_sno CHAR(9))
+RETURNS DECIMAL(4, 2)
+READS SQL DATA
+BEGIN
+    DECLARE v_gpa DECIMAL(4, 2);
+    DECLARE v_total_credit INT;
+    DECLARE v_total_point DECIMAL(10, 2);
+    
+    -- 计算总学分和加权绩点
+    SELECT 
+        SUM(c.ccredit),
+        SUM(
+            CASE 
+                WHEN sc.grade >= 90 THEN 4. 0 * c.ccredit
+                WHEN sc. grade >= 80 THEN 3.0 * c. ccredit
+                WHEN sc.grade >= 70 THEN 2.0 * c.ccredit
+                WHEN sc.grade >= 60 THEN 1.0 * c.ccredit
+                ELSE 0
+            END
+        )
+    INTO v_total_credit, v_total_point
+    FROM sc_practice sc
+    JOIN course_practice c ON sc.cno = c.cno
+    WHERE sc.sno = p_sno;
+    
+    -- 计算 GPA
+    IF v_total_credit IS NULL OR v_total_credit = 0 THEN
+        RETURN 0.00;
+    END IF;
+    
+    SET v_gpa = v_total_point / v_total_credit;
+    RETURN v_gpa;
+END //
+DELIMITER ;
+
+-- 调用测试
+SELECT sno, sname, func_calc_gpa(sno) AS GPA FROM student_practice;
+
+-- -----------------------------------------------------------------------------
+-- 综合练习3：游标 - 批量生成成绩报告
+-- -----------------------------------------------------------------------------
+DROP PROCEDURE IF EXISTS proc_grade_report;
+
+DELIMITER //
+CREATE PROCEDURE proc_grade_report()
+BEGIN
+    DECLARE v_sno CHAR(9);
+    DECLARE v_sname VARCHAR(20);
+    DECLARE v_avg DECIMAL(5, 2);
+    DECLARE done INT DEFAULT 0;
+    DECLARE report TEXT DEFAULT '';
+    
+    -- 声明游标：查询每个学生的平均成绩
+    DECLARE stu_cur CURSOR FOR
+        SELECT s.sno, s.sname, IFNULL(AVG(sc.grade), 0) AS avg_grade
+        FROM student_practice s
+        LEFT JOIN sc_practice sc ON s.sno = sc.sno
+        GROUP BY s.sno, s.sname;
+    
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    
+    OPEN stu_cur;
+    
+    read_loop: LOOP
+        FETCH stu_cur INTO v_sno, v_sname, v_avg;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- 生成评语
+        SET report = CONCAT(report, 
+            '学号:', v_sno, 
+            ' 姓名:', v_sname, 
+            ' 平均分:', v_avg,
+            ' 评价:', 
+            CASE 
+                WHEN v_avg >= 90 THEN '优秀'
+                WHEN v_avg >= 80 THEN '良好'
+                WHEN v_avg >= 60 THEN '及格'
+                ELSE '需努力'
+            END,
+            '\n'
+        );
+    END LOOP read_loop;
+    
+    CLOSE stu_cur;
+    
+    SELECT report AS 成绩报告;
+END //
+DELIMITER ;
+
+-- 调用测试
+CALL proc_grade_report();
+
+-- -----------------------------------------------------------------------------
+-- 综合练习4：触发器 - 自动更新统计表
+-- -----------------------------------------------------------------------------
+
+-- 创建统计表
+DROP TABLE IF EXISTS stats_table;
+CREATE TABLE stats_table (
+    id INT PRIMARY KEY,
+    item_name VARCHAR(50),
+    item_value INT DEFAULT 0
+);
+
+INSERT INTO stats_table VALUES (1, '学生总数', 3), (2, '选课总数', 4);
+
+-- 插入学生时自动更新统计
+DROP TRIGGER IF EXISTS tr_student_insert_stats;
+
+DELIMITER //
+CREATE TRIGGER tr_student_insert_stats
+AFTER INSERT ON student_practice
+FOR EACH ROW
+BEGIN
+    UPDATE stats_table SET item_value = item_value + 1 WHERE item_name = '学生总数';
+END //
+DELIMITER ;
+
+-- 删除学生时自动更新统计
+DROP TRIGGER IF EXISTS tr_student_delete_stats;
+
+DELIMITER //
+CREATE TRIGGER tr_student_delete_stats
+AFTER DELETE ON student_practice
+FOR EACH ROW
+BEGIN
+    UPDATE stats_table SET item_value = item_value - 1 WHERE item_name = '学生总数';
+END //
+DELIMITER ;
+
+-- 插入选课时自动更新统计
+DROP TRIGGER IF EXISTS tr_sc_insert_stats;
+
+DELIMITER //
+CREATE TRIGGER tr_sc_insert_stats
+AFTER INSERT ON sc_practice
+FOR EACH ROW
+BEGIN
+    UPDATE stats_table SET item_value = item_value + 1 WHERE item_name = '选课总数';
+END //
+DELIMITER ;
+
+-- 测试
+INSERT INTO student_practice VALUES ('004', '赵六', 22);
+SELECT * FROM stats_table;  -- 学生总数变为 4
+
+INSERT INTO sc_practice VALUES ('004', 'C2', 88);
+SELECT * FROM stats_table;  -- 选课总数变为 5
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- 第十部分：知识点速查表
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+/*
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           📚 Day 2 知识点速查表                                  │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 1️⃣  完整性约束                                                            │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  实体完整性    →  PRIMARY KEY（主键非空唯一）                              │  │
+│  │  参照完整性    →  FOREIGN KEY ...  REFERENCES（外键引用有效）               │  │
+│  │  用户定义      →  CHECK, NOT NULL, UNIQUE, DEFAULT                        │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 2️⃣  外键动作                                                              │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  RESTRICT     →  禁止操作（默认，最安全）                                  │  │
+│  │  CASCADE      →  级联操作（父子同步）                                      │  │
+│  │  SET NULL     →  设为 NULL（解除关联）                                     │  │
+│  │  NO ACTION    →  同 RESTRICT（SQL标准写法）                                │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 3️⃣  安全性管理                                                            │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  用户管理    →  CREATE USER / DROP USER / ALTER USER                      │  │
+│  │  权限授予    →  GRANT 权限 ON 数据库. 表 TO 用户                            │  │
+│  │  权限撤销    →  REVOKE 权限 ON 数据库. 表 FROM 用户                         │  │
+│  │  角色管理    →  CREATE ROLE / GRANT 角色 TO 用户                           │  │
+│  │  查看权限    →  SHOW GRANTS FOR 用户                                       │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 4️⃣  事务 ACID                                                             │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  原子性 (Atomicity)      →  全做或全不做                                   │  │
+│  │  一致性 (Consistency)    →  执行前后数据一致                               │  │
+│  │  隔离性 (Isolation)      →  并发事务互不干扰                               │  │
+│  │  持久性 (Durability)     →  提交后永久保存                                 │  │
+│  │                                                                           │  │
+│  │  START TRANSACTION → SQL操作 → COMMIT / ROLLBACK                          │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 5️⃣  存储过程                                                              │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  创建  →  CREATE PROCEDURE 过程名(IN/OUT/INOUT 参数) BEGIN... END          │  │
+│  │  调用  →  CALL 过程名(参数)                                                │  │
+│  │  删除  →  DROP PROCEDURE IF EXISTS 过程名                                  │  │
+│  │                                                                           │  │
+│  │  参数类型：                                                                │  │
+│  │    IN     →  输入参数（调用时传入，不返回）                                │  │
+│  │    OUT    →  输出参数（用变量接收返回值）                                  │  │
+│  │    INOUT  →  输入输出参数（传入并返回）                                    │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 6️⃣  存储函数                                                              │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  创建  →  CREATE FUNCTION 函数名(参数) RETURNS 类型 BEGIN... RETURN... END  │  │
+│  │  调用  →  SELECT 函数名(参数) 或嵌入其他SQL                                │  │
+│  │  删除  →  DROP FUNCTION IF EXISTS 函数名                                   │  │
+│  │                                                                           │  │
+│  │  必须有 RETURNS 和 RETURN，只能返回一个值                                  │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 7️⃣  存储过程 vs 存储函数                                                  │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  特性          │  存储过程              │  存储函数                        │  │
+│  │  ─────────────────────────────────────────────────────────────────────── │  │
+│  │  返回值        │  OUT参数，可多个       │  RETURN，只能一个                │  │
+│  │  调用方式      │  CALL                  │  SELECT 或嵌入SQL               │  │
+│  │  参数类型      │  IN/OUT/INOUT          │  只有 IN                         │  │
+│  │  在SQL中使用   │  ❌                    │  ✅                              │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 8️⃣  流程控制语句                                                          │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  条件判断  →  IF... THEN...ELSEIF...ELSE...END IF                          │  │
+│  │  分支语句  →  CASE WHEN... THEN...ELSE...END CASE                          │  │
+│  │  WHILE     →  WHILE 条件 DO...END WHILE（先判断后执行）                   │  │
+│  │  LOOP      →  LOOP... LEAVE 标签... END LOOP（配合LEAVE退出）               │  │
+│  │  REPEAT    →  REPEAT...UNTIL 条件 END REPEAT（先执行后判断）              │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 9️⃣  游标                                                                  │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  声明顺序（必须遵守！）：                                                  │  │
+│  │    1.  DECLARE 变量                                                        │  │
+│  │    2. DECLARE 游标 CURSOR FOR SELECT...                                    │  │
+│  │    3. DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1                 │  │
+│  │                                                                           │  │
+│  │  使用步骤：                                                                │  │
+│  │    OPEN 游标 → FETCH 游标 INTO 变量 → 处理数据 → CLOSE 游标               │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+│  ┌───────────────────────────────────────────────────────────────────────────┐  │
+│  │ 🔟 触发器                                                                  │  │
+│  ├───────────────────────────────────────────────────────────────────────────┤  │
+│  │  语法  →  CREATE TRIGGER 名 {BEFORE|AFTER} {INSERT|UPDATE|DELETE} ON 表   │  │
+│  │           FOR EACH ROW BEGIN... END                                        │  │
+│  │                                                                           │  │
+│  │  NEW 和 OLD：                                                              │  │
+│  │    INSERT  →  NEW 可用（新数据）                                          │  │
+│  │    UPDATE  →  NEW 和 OLD 都可用                                           │  │
+│  │    DELETE  →  OLD 可用（被删数据）                                        │  │
+│  │                                                                           │  │
+│  │  BEFORE vs AFTER：                                                         │  │
+│  │    BEFORE  →  可修改 NEW 值（数据校验、自动填充）                         │  │
+│  │    AFTER   →  不能修改数据（日志记录、统计更新）                          │  │
+│  └───────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+*/
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- 第十一部分：常见语法模板（考试直接套用）
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+-- =============================================================================
+-- 11. 1 创建带完整约束的表（模板）
+-- =============================================================================
+
+/*
+CREATE TABLE 表名 (
+    id INT PRIMARY KEY AUTO_INCREMENT,                    -- 自增主键
+    字段1 数据类型 NOT NULL,                              -- 非空约束
+    字段2 数据类型 UNIQUE,                                -- 唯一约束
+    字段3 数据类型 CHECK (条件),                          -- 检查约束
+    字段4 数据类型 DEFAULT 默认值,                        -- 默认值
+    外键字段 数据类型,
+    FOREIGN KEY (外键字段) REFERENCES 父表(主键)          -- 外键约束
+        ON DELETE RESTRICT ON UPDATE CASCADE
+);
+*/
+
+
+-- =============================================================================
+-- 11.2 存储过程模板
+-- =============================================================================
+
+/*
+DELIMITER //
+CREATE PROCEDURE 过程名(
+    IN 输入参数 数据类型,
+    OUT 输出参数 数据类型
+)
+BEGIN
+    -- 声明变量
+    DECLARE 变量名 数据类型 DEFAULT 默认值;
+    
+    -- 业务逻辑
+    SELECT ...  INTO 输出参数 FROM ...  WHERE ... ;
+    
+    -- 或使用流程控制
+    IF 条件 THEN
+        ... 
+    ELSE
+        ...
+    END IF;
+END //
+DELIMITER ;
+
+-- 调用
+CALL 过程名(参数值, @输出变量);
+SELECT @输出变量;
+*/
+
+
+-- =============================================================================
+-- 11.3 存储函数模板
+-- =============================================================================
+
+/*
+DELIMITER //
+CREATE FUNCTION 函数名(参数 数据类型)
+RETURNS 返回类型
+DETERMINISTIC  -- 或 READS SQL DATA
+BEGIN
+    DECLARE 变量 数据类型;
+    
+    -- 计算逻辑
+    SELECT ... INTO 变量 FROM ... ;
+    
+    RETURN 变量;
+END //
+DELIMITER ;
+
+-- 调用
+SELECT 函数名(参数值);
+SELECT 字段, 函数名(字段) FROM 表;
+*/
+
+
+-- =============================================================================
+-- 11.4 游标模板
+-- =============================================================================
+
+/*
+DELIMITER //
+CREATE PROCEDURE 过程名()
+BEGIN
+    -- 1. 声明变量（必须最先）
+    DECLARE v_字段1 数据类型;
+    DECLARE v_字段2 数据类型;
+    DECLARE done INT DEFAULT 0;
+    
+    -- 2. 声明游标
+    DECLARE 游标名 CURSOR FOR
+        SELECT 字段1, 字段2 FROM 表名;
+    
+    -- 3. 声明异常处理
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = 1;
+    
+    -- 4. 打开游标
+    OPEN 游标名;
+    
+    -- 5. 循环读取
+    read_loop: LOOP
+        FETCH 游标名 INTO v_字段1, v_字段2;
+        
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        
+        -- 处理每行数据
+        ... 
+    END LOOP read_loop;
+    
+    -- 6. 关闭游标
+    CLOSE 游标名;
+END //
+DELIMITER ;
+*/
+
+
+-- =============================================================================
+-- 11.5 触发器模板
+-- =============================================================================
+
+/*
+-- INSERT 触发器
+DELIMITER //
+CREATE TRIGGER tr_表名_insert
+{BEFORE|AFTER} INSERT ON 表名
+FOR EACH ROW
+BEGIN
+    -- 使用 NEW. 字段 获取新插入的值
+    -- BEFORE 可以修改 NEW. 字段
+END //
+DELIMITER ;
+
+-- UPDATE 触发器
+DELIMITER //
+CREATE TRIGGER tr_表名_update
+{BEFORE|AFTER} UPDATE ON 表名
+FOR EACH ROW
+BEGIN
+    -- OLD. 字段 = 更新前的值
+    -- NEW.字段 = 更新后的值
+    IF OLD.字段 != NEW.字段 THEN
+        ... 
+    END IF;
+END //
+DELIMITER ;
+
+-- DELETE 触发器
+DELIMITER //
+CREATE TRIGGER tr_表名_delete
+{BEFORE|AFTER} DELETE ON 表名
+FOR EACH ROW
+BEGIN
+    -- 使用 OLD. 字段 获取被删除的值
+END //
+DELIMITER ;
+*/
+
+
+-- =============================================================================
+-- 11.6 事务模板
+-- =============================================================================
+
+/*
+START TRANSACTION;  -- 开启事务
+
+-- 执行多条 SQL
+UPDATE 表1 SET ... ;
+UPDATE 表2 SET ...;
+
+-- 判断是否成功
+-- 成功则提交
+COMMIT;
+
+-- 失败则回滚
+-- ROLLBACK;
+*/
+
+
+-- =============================================================================
+-- 11.7 用户权限管理模板
+-- =============================================================================
+
+/*
+-- 创建用户
+CREATE USER '用户名'@'localhost' IDENTIFIED BY '密码';
+CREATE USER '用户名'@'%' IDENTIFIED BY '密码';
+
+-- 授权
+GRANT SELECT ON 数据库. * TO '用户名'@'localhost';
+GRANT SELECT, INSERT, UPDATE, DELETE ON 数据库.* TO '用户名'@'localhost';
+GRANT ALL PRIVILEGES ON 数据库.* TO '用户名'@'localhost';
+GRANT ALL PRIVILEGES ON *.* TO '用户名'@'localhost' WITH GRANT OPTION;
+
+-- 查看权限
+SHOW GRANTS FOR '用户名'@'localhost';
+
+-- 撤销权限
+REVOKE SELECT ON 数据库.* FROM '用户名'@'localhost';
+REVOKE ALL PRIVILEGES ON *.* FROM '用户名'@'localhost';
+
+-- 删除用户
+DROP USER '用户名'@'localhost';
+
+-- 刷新权限
+FLUSH PRIVILEGES;
+*/
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+-- 📝 Day 2 复习完成！
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+/*
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           📊 Day 2 复习统计                                      │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   模块                    知识点                                                │
+│   ──────────────────────────────────────────────────────                        │
+│   完整性约束              PRIMARY KEY, FOREIGN KEY, CHECK, NOT NULL, UNIQUE     │
+│   外键动作                RESTRICT, CASCADE, SET NULL                           │
+│   数据库安全              CREATE USER, GRANT, REVOKE, ROLE                      │
+│   事务                    ACID, START TRANSACTION, COMMIT, ROLLBACK             │
+│   存储过程                IN/OUT/INOUT 参数, 流程控制                           │
+│   存储函数                RETURNS, RETURN, DETERMINISTIC                        │
+│   游标                    DECLARE CURSOR, FETCH, HANDLER                        │
+│   触发器                  BEFORE/AFTER, INSERT/UPDATE/DELETE, NEW/OLD           │
+│                                                                                 │
+├─────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                 │
+│   🎯 考试重点：                                                                  │
+│      ✅ 三类完整性约束的含义和实现方式                                           │
+│      ✅ 外键动作选项（RESTRICT vs CASCADE）                                      │
+│      ✅ ACID 四个特性的含义                                                      │
+│      ✅ 存储过程和存储函数的区别                                                 │
+│      ✅ 游标的使用步骤和声明顺序                                                 │
+│      ✅ 触发器的 NEW 和 OLD 关键字                                               │
+│      ✅ BEFORE 和 AFTER 的区别                                                   │
+│                                                                                 │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+🎉 两天复习计划完成！祝你考试顺利！💪
+*/
